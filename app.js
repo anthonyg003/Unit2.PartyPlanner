@@ -8,16 +8,33 @@ const state = {
 
 // ******************************* Selectors ******************************************
 const partyList = document.querySelector("#parties");
-const addPartyForm = document.querySelector("#addParty");
-addPartyForm.addEventListener("submit", createParties);
+const addPartyForm = document.getElementById("add-Party");
+console.log(addPartyForm);
+addPartyForm.addEventListener("submit", async (event) => {
+  // createParties
+  event.preventDefault();
+
+  let name = document.getElementsByName("title");
+  console.log(name[0].value);
+  let description = document.getElementsByName("description");
+  let date = document.getElementsByName("date");
+  let location = document.getElementsByName("location");
+  console.log(event);
+  await createParties(
+    name[0].value,
+    description[0].value,
+    date[0].value,
+    location[0].value
+  );
+});
 
 // ******************************** Methods *********************************************
 
 async function render() {
   //fetches the parties
-  await getParties();
+  let partyGetter = await getParties();
   //renders the parties to UI
-  renderParties();
+  renderParties(partyGetter);
 }
 render();
 
@@ -29,7 +46,7 @@ async function getParties() {
     const json = await response.json();
     console.log("json --->", json);
     //adds data to parties array
-    state.parties = json.data;
+    return json.data;
   } catch (error) {
     console.error(error, "There was an error /GET parties");
   }
@@ -40,13 +57,19 @@ async function getParties() {
 //CREATE REQUEST - POST
 async function createParties(name, description, date, location) {
   try {
+    const newDate = new Date(date);
     const response = await fetch(API_URL, {
       //creates by using POST request
       method: "POST",
       //tells to send data through json
       headers: { "Content-Type": "application/json" },
       //stringify data through json and put in an object
-      body: JSON.stringify({ name, description, date, location }),
+      body: JSON.stringify({
+        name,
+        description,
+        date: newDate.toISOString(),
+        location,
+      }),
     });
     const json = await response.json();
     //updates the UI
@@ -106,13 +129,13 @@ async function deleteParty(id) {
   }
 }
 
-function renderParties() {
+function renderParties(parties) {
   //checks if there is any parties
-  if (state.parties.length === 0) {
+  if (parties.length === 0) {
     //displays message if there are no parties
     partyList.innerHTML = `<li> No parties found <li>`;
   }
-  const partyCards = state.parties.map((party) => {
+  const partyCards = parties.map((party) => {
     //creates an li tag
     const partyCard = document.createElement("li");
     //adds a class to the li tag
@@ -123,6 +146,7 @@ function renderParties() {
     <p>${party.description}</p>
     <p>${party.date}
     <p>${party.location}</p>`;
+    partyList.appendChild(partyCard);
     //creates delete button
     const deleteButton = document.createElement("button");
     //adds text to button
@@ -133,5 +157,6 @@ function renderParties() {
     deleteButton.addEventListener("click", () => deleteParty(party.id));
     return partyCard;
   });
-  partyList.replaceChildren(partyCards);
+  console.log(partyCards);
+  // partyList.replaceChildren(partyCards);
 }
